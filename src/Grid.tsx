@@ -1,15 +1,14 @@
-/* eslint-disable no-console */
+import { RefHandle, systemToComponent } from '@virtuoso.dev/react-urx'
+
+import * as u from '@virtuoso.dev/urx'
 import * as React from 'react'
 import { createElement, FC, PropsWithChildren } from 'react'
-
-import { RefHandle, systemToComponent } from '@virtuoso.dev/react-urx'
-import * as u from '@virtuoso.dev/urx'
-
 import { gridSystem } from './gridSystem'
 import useSize from './hooks/useSize'
 import useWindowViewportRectRef from './hooks/useWindowViewportRect'
 import { GridComponents, GridComputeItemKey, GridItemContent, GridRootProps } from './interfaces'
 import { addDeprecatedAlias, buildScroller, buildWindowScroller, contextPropIfNotDomElement, identity, viewportStyle } from './List'
+import { Log, LogLevel } from './loggerSystem'
 
 const gridComponentPropsSystem = u.system(() => {
   const itemContent = u.statefulStream<GridItemContent<any>>((index) => `Item ${index}`)
@@ -103,6 +102,8 @@ const GridItems: FC = React.memo(function GridItems() {
   const ScrollSeekPlaceholder = useEmitterValue('ScrollSeekPlaceholder')!
   const context = useEmitterValue('context')
   const itemDimensions = usePublisher('itemDimensions')
+  const gridGap = usePublisher('gap')
+  const log = useEmitterValue('log')
 
   const listRef = useSize((el) => {
     const scrollHeight = el.parentElement!.parentElement!.scrollHeight
@@ -111,6 +112,10 @@ const GridItems: FC = React.memo(function GridItems() {
     if (firstItem) {
       itemDimensions(firstItem.getBoundingClientRect())
     }
+    gridGap({
+      row: resolveGapValue('row-gap', getComputedStyle(el).rowGap, log),
+      column: resolveGapValue('column-gap', getComputedStyle(el).columnGap, log),
+    })
   })
 
   return createElement(
@@ -119,10 +124,7 @@ const GridItems: FC = React.memo(function GridItems() {
       ref: listRef,
       className: listClassName,
       ...contextPropIfNotDomElement(ListComponent, context),
-      style: {
-        paddingTop: gridState.offsetTop,
-        paddingBottom: gridState.offsetBottom,
-      },
+      style: { paddingTop: gridState.offsetTop, paddingBottom: gridState.offsetBottom },
     },
     gridState.items.map((item) => {
       const key = computeItemKey(item.index)
@@ -136,12 +138,7 @@ const GridItems: FC = React.memo(function GridItems() {
           })
         : createElement(
             ItemComponent,
-            {
-              ...contextPropIfNotDomElement(ItemComponent, context),
-              className: itemClassName,
-              'data-index': item.index,
-              key,
-            },
+            { ...contextPropIfNotDomElement(ItemComponent, context), className: itemClassName, 'data-index': item.index, key },
             itemContent(item.index, context)
           )
     })
@@ -241,8 +238,14 @@ export type GridHandle = RefHandle<typeof Grid>
 export { Grid }
 
 const Scroller = buildScroller({ usePublisher, useEmitterValue, useEmitter })
-const WindowScroller = buildWindowScroller({
-  usePublisher,
-  useEmitterValue,
-  useEmitter,
-})
+const WindowScroller = buildWindowScroller({ usePublisher, useEmitterValue, useEmitter })
+
+function resolveGapValue(property: string, value: string, log: Log) {
+  if (value !== 'normal' && !value.endsWith('px')) {
+    log(`${property} was not resolved to pixel value correctly`, value, LogLevel.WARN)
+  }
+  if (value === 'normal') {
+    return 0
+  }
+  return parseInt(value, 10)
+}
