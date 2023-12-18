@@ -1,10 +1,9 @@
 import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 /* eslint-disable no-continue */
-import { ScrollContainerState } from '../interfaces'
 import { Log, LogLevel } from '../loggerSystem'
 import { SizeFunction, SizeRange } from '../sizeSystem'
 import { useSizeWithElRef } from './useSize'
-
+import { ScrollContainerState } from '../interfaces'
 export default function useChangedListContentsSizes(
   callback: (ranges: SizeRange[]) => void,
   itemSize: SizeFunction,
@@ -24,17 +23,31 @@ export default function useChangedListContentsSizes(
       scrollableElement = scrollableElement.parentElement!
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const windowScrolling = (scrollableElement.firstElementChild! as HTMLDivElement).dataset['viewportType']! === 'window'
+
     const scrollTop = customScrollParent
       ? customScrollParent.scrollTop
-      : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (scrollableElement.firstElementChild! as HTMLDivElement).dataset['viewportType']! === 'window'
+      : windowScrolling
       ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
       : scrollableElement.scrollTop
 
+    const scrollHeight = customScrollParent
+      ? customScrollParent.scrollHeight
+      : windowScrolling
+      ? document.documentElement.scrollHeight
+      : scrollableElement.scrollHeight
+
+    const viewportHeight = customScrollParent
+      ? customScrollParent.offsetHeight
+      : windowScrolling
+      ? window.innerHeight
+      : scrollableElement.offsetHeight
+
     scrollContainerStateCallback({
       scrollTop: Math.max(scrollTop, 0),
-      scrollHeight: (customScrollParent ?? scrollableElement).scrollHeight,
-      viewportHeight: (customScrollParent ?? scrollableElement).offsetHeight,
+      scrollHeight,
+      viewportHeight,
     })
 
     gap?.(resolveGapValue('row-gap', getComputedStyle(el).rowGap, log))
@@ -61,7 +74,6 @@ function getChangedChildSizes(children: HTMLCollection, itemSize: SizeFunction, 
       continue
     }
 
-    // eslint-disable-next-line radix
     const index = parseInt(child.dataset.index!)
     const knownSize = parseFloat(child.dataset.knownSize!)
     const size = itemSize(child, field)
