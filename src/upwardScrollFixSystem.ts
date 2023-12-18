@@ -1,11 +1,13 @@
 import * as u from '@virtuoso.dev/urx'
-import { domIOSystem } from './domIOSystem'
-import { listStateSystem } from './listStateSystem'
-import { sizeSystem } from './sizeSystem'
-import { UP, stateFlagsSystem } from './stateFlagsSystem'
-import { ListItem } from './interfaces'
-import { loggerSystem, LogLevel } from './loggerSystem'
 
+import { domIOSystem } from './domIOSystem'
+import { ListItem } from './interfaces'
+import { listStateSystem } from './listStateSystem'
+import { loggerSystem, LogLevel } from './loggerSystem'
+import { sizeSystem } from './sizeSystem'
+import { stateFlagsSystem, UP } from './stateFlagsSystem'
+
+type UpwardFixState = [number, ListItem<any>[], number, number]
 /**
  * Fixes upward scrolling by calculating and compensation from changed item heights, using scrollBy.
  */
@@ -22,41 +24,32 @@ export const upwardScrollFixSystem = u.system(
         listState,
         u.withLatestFrom(lastJumpDueToItemResize),
         u.scan(
-          ([, prevItems, prevTotalCount], [{ items, totalCount }, lastJumpDueToItemResize]) => {
+          (
+            [, prevItems, prevTotalCount, prevTotalHeight],
+            [
+              // @ts-ignore
+              { items, totalCount, bottom, offsetBottom },
+              lastJumpDueToItemResize,
+            ]
+          ) => {
+            const totalHeight = bottom + offsetBottom
+
             let newDev = 0
             if (prevTotalCount === totalCount) {
               if (prevItems.length > 0 && items.length > 0) {
-                const firstItemIndex = items[0].originalIndex
-                const prevFirstItemIndex = prevItems[0].originalIndex
-                const atStart = firstItemIndex === 0 && prevFirstItemIndex === 0
-                const onlyItem = items.length === 1
-
+                const atStart = items[0].originalIndex === 0 && prevItems[0].originalIndex === 0
                 if (!atStart) {
-                  for (let index = items.length - 1; index >= 0; index--) {
-                    const item = items[index]
-
-                    const prevItem = prevItems.find((pItem) => pItem.originalIndex === item.originalIndex)
-
-                    if (!prevItem) {
-                      continue
-                    }
-
-                    if (item.offset !== prevItem.offset || onlyItem) {
-                      newDev = item.offset - prevItem.offset + item.size - prevItem.size
-                      break
-                    }
+                  newDev = totalHeight - prevTotalHeight
+                  if (newDev !== 0) {
+                    newDev += lastJumpDueToItemResize
                   }
                 }
               }
-
-              if (newDev !== 0) {
-                newDev += lastJumpDueToItemResize
-              }
             }
 
-            return [newDev, items, totalCount] as [number, ListItem<any>[], number]
+            return [newDev, items, totalCount, totalHeight] as UpwardFixState
           },
-          [0, [], 0] as [number, ListItem<any>[], number]
+          [0, [], 0, 0] as UpwardFixState
         ),
         u.filter(([amount]) => amount !== 0),
         u.withLatestFrom(scrollTop, scrollDirection, scrollingInProgress, log, isAtBottom, atBottomState),
@@ -86,7 +79,7 @@ export const upwardScrollFixSystem = u.system(
       u.pipe(
         u.combineLatest(u.statefulStreamFromEmitter(isScrolling, false), deviation),
         u.filter(([is, deviation]) => !is && deviation !== 0),
-        u.map(([_, deviation]) => deviation),
+        u.map(([, deviation]) => deviation),
         u.throttleTime(1)
       ),
       (offset) => {

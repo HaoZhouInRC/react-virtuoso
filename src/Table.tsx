@@ -1,14 +1,17 @@
-import { systemToComponent } from '@virtuoso.dev/react-urx'
-import { map, pipe, statefulStream, system, tup, statefulStreamFromEmitter, distinctUntilChanged, noop, compose } from '@virtuoso.dev/urx'
 import * as React from 'react'
-import { createElement, FC } from 'react'
+import { createElement, FC, PropsWithChildren } from 'react'
+
+import { systemToComponent } from '@virtuoso.dev/react-urx'
+import { compose, distinctUntilChanged, map, noop, pipe, statefulStream, statefulStreamFromEmitter, system, tup } from '@virtuoso.dev/urx'
+
 import useChangedListContentsSizes from './hooks/useChangedChildSizes'
-import { ComputeItemKey, ItemContent, FixedHeaderContent, TableComponents, TableRootProps } from './interfaces'
-import { listSystem } from './listSystem'
-import { identity, buildScroller, buildWindowScroller, viewportStyle, contextPropIfNotDomElement } from './List'
 import useSize from './hooks/useSize'
-import { correctItemSize } from './utils/correctItemSize'
 import useWindowViewportRectRef from './hooks/useWindowViewportRect'
+import { ComputeItemKey, FixedHeaderContent, ItemContent, TableComponents, TableRootProps } from './interfaces'
+import { buildScroller, buildWindowScroller, contextPropIfNotDomElement, identity, viewportStyle } from './List'
+import { listSystem } from './listSystem'
+import conditionalFlushSync from './utils/conditionalFlushSync'
+import { correctItemSize } from './utils/correctItemSize'
 
 const tableComponentPropsSystem = system(() => {
   const itemContent = statefulStream<ItemContent<any, unknown>>((index: number) => <td>Item ${index}</td>)
@@ -46,6 +49,7 @@ const tableComponentPropsSystem = system(() => {
     ScrollerComponent: distinctProp('Scroller', 'div'),
     EmptyPlaceholder: distinctProp('EmptyPlaceholder'),
     ScrollSeekPlaceholder: distinctProp('ScrollSeekPlaceholder'),
+    FillerRow: distinctProp('FillerRow'),
   }
 })
 
@@ -55,19 +59,25 @@ const combinedSystem = system(([listSystem, propsSystem]) => {
 
 const DefaultScrollSeekPlaceholder = ({ height }: { height: number }) => (
   <tr>
-    <td style={{ height }}></td>
+    <td style={{ height }} />
   </tr>
 )
 
-const FillerRow = ({ height }: { height: number }) => (
+const DefaultFillerRow = ({ height }: { height: number }) => (
   <tr>
-    <td style={{ height: height, padding: 0, border: 0 }}></td>
+    <td style={{ height, padding: 0, border: 0 }} />
   </tr>
 )
 
 export const Items = React.memo(function VirtuosoItems() {
   const listState = useEmitterValue('listState')
-  const deviation = useEmitterValue('deviation')
+  const [deviation, setDeviation] = React.useState(0)
+  const react18ConcurrentRendering = useEmitterValue('react18ConcurrentRendering')
+  useEmitter('deviation', (value) => {
+    if (deviation !== value) {
+      conditionalFlushSync(react18ConcurrentRendering)(() => setDeviation(value))
+    }
+  })
   const sizeRanges = usePublisher('sizeRanges')
   const useWindowScroll = useEmitterValue('useWindowScroll')
   const customScrollParent = useEmitterValue('customScrollParent')
@@ -83,6 +93,7 @@ export const Items = React.memo(function VirtuosoItems() {
   const ref = useChangedListContentsSizes(sizeRanges, itemSize, trackItemSizes, scrollContainerStateCallback, log, customScrollParent)
   const EmptyPlaceholder = useEmitterValue('EmptyPlaceholder')
   const ScrollSeekPlaceholder = useEmitterValue('ScrollSeekPlaceholder') || DefaultScrollSeekPlaceholder
+  const FillerRow = useEmitterValue('FillerRow') || DefaultFillerRow
   const TableBodyComponent = useEmitterValue('TableBodyComponent')!
   const TableRowComponent = useEmitterValue('TableRowComponent')!
   const computeItemKey = useEmitterValue('computeItemKey')
@@ -132,7 +143,11 @@ export const Items = React.memo(function VirtuosoItems() {
 
   return createElement(
     TableBodyComponent,
-    { ref, 'data-test-id': 'virtuoso-item-list', ...contextPropIfNotDomElement(TableBodyComponent, context) },
+    {
+      ref,
+      'data-test-id': 'virtuoso-item-list',
+      ...contextPropIfNotDomElement(TableBodyComponent, context),
+    },
     [paddingTopEl, ...items, paddingBottomEl]
   )
 })
@@ -143,7 +158,7 @@ export interface Hooks {
   useEmitter: typeof useEmitter
 }
 
-const Viewport: FC = ({ children }) => {
+const Viewport: FC<PropsWithChildren<unknown>> = ({ children }) => {
   const viewportHeight = usePublisher('viewportHeight')
   const viewportRef = useSize(compose(viewportHeight, (el) => correctItemSize(el, 'height')))
 
@@ -154,7 +169,7 @@ const Viewport: FC = ({ children }) => {
   )
 }
 
-const WindowViewport: FC = ({ children }) => {
+const WindowViewport: FC<PropsWithChildren<unknown>> = ({ children }) => {
   const windowViewportRect = usePublisher('windowViewportRect')
   const customScrollParent = useEmitterValue('customScrollParent')
   const viewportRef = useWindowViewportRectRef(windowViewportRect, customScrollParent)
@@ -194,10 +209,14 @@ const TableRoot: FC<TableRootProps> = React.memo(function TableVirtuosoRoot(prop
   return (
     <TheScroller {...props}>
       <TheViewport>
-        {React.createElement(TheTable!, { style: { borderSpacing: 0 }, ...contextPropIfNotDomElement(TheTable, context) } as any, [
-          theHead,
-          <Items key="TableBody" />,
-        ])}
+        {React.createElement(
+          TheTable!,
+          {
+            style: { borderSpacing: 0 },
+            ...contextPropIfNotDomElement(TheTable, context),
+          } as any,
+          [theHead, <Items key="TableBody" />]
+        )}
       </TheViewport>
     </TheScroller>
   )
@@ -239,6 +258,7 @@ export const {
       customScrollParent: 'customScrollParent',
       scrollerRef: 'scrollerRef',
       logLevel: 'logLevel',
+      react18ConcurrentRendering: 'react18ConcurrentRendering',
     },
     methods: {
       scrollToIndex: 'scrollToIndex',
@@ -262,4 +282,8 @@ export const {
 )
 
 const Scroller = buildScroller({ usePublisher, useEmitterValue, useEmitter })
-const WindowScroller = buildWindowScroller({ usePublisher, useEmitterValue, useEmitter })
+const WindowScroller = buildWindowScroller({
+  usePublisher,
+  useEmitterValue,
+  useEmitter,
+})

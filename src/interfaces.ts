@@ -1,4 +1,5 @@
 import { ComponentPropsWithRef, ComponentType, Key, ReactNode } from 'react'
+
 export interface ListRange {
   startIndex: number
   endIndex: number
@@ -8,7 +9,7 @@ export interface ItemContent<D, C> {
   (index: number, data: D, context: C): ReactNode
 }
 
-export type FixedHeaderContent = (() => React.ReactChildren | React.ReactNode) | null
+export type FixedHeaderContent = (() => React.ReactNode) | null
 
 export interface GroupItemContent<D, C> {
   (index: number, groupIndex: number, data: D, context: C): ReactNode
@@ -18,14 +19,14 @@ export interface GroupContent {
   (index: number): ReactNode
 }
 
-export interface ItemProps {
+export type ItemProps = Pick<ComponentPropsWithRef<'div'>, 'style' | 'children'> & {
   'data-index': number
   'data-item-index': number
   'data-item-group-index'?: number
   'data-known-size': number
 }
 
-export interface GroupProps {
+export type GroupProps = Pick<ComponentPropsWithRef<'div'>, 'style' | 'children'> & {
   'data-index': number
   'data-item-index': number
   'data-known-size': number
@@ -65,6 +66,12 @@ export interface ScrollSeekPlaceholderProps {
   height: number
   groupIndex?: number
   type: 'group' | 'item'
+}
+/**
+ * Passed to the Components.FillerRow custom component
+ */
+export interface FillerRowProps {
+  height: number
 }
 
 /**
@@ -168,6 +175,11 @@ export interface TableComponents<Context = unknown> {
    * Set to render an item placeholder when the user scrolls fast.  See the `scrollSeek` property for more details.
    */
   ScrollSeekPlaceholder?: ComponentType<ScrollSeekPlaceholderProps & { context?: Context }>
+
+  /**
+   * Set to render an empty item placeholder.
+   */
+  FillerRow?: ComponentType<FillerRowProps & { context?: Context }>
 }
 
 export interface ComputeItemKey<D, C> {
@@ -236,9 +248,9 @@ export interface IndexLocationWithAlign {
   offset?: number
 }
 
-export type ListRootProps = Omit<React.HTMLProps<'div'>, 'ref' | 'data'>
-export type TableRootProps = Omit<React.HTMLProps<'table'>, 'ref' | 'data'>
-export type GridRootProps = Omit<React.HTMLProps<'div'>, 'ref' | 'data'>
+export type ListRootProps = Omit<React.HTMLProps<HTMLDivElement>, 'ref' | 'data'>
+export type TableRootProps = Omit<React.HTMLProps<HTMLTableElement>, 'ref' | 'data'>
+export type GridRootProps = Omit<React.HTMLProps<HTMLDivElement>, 'ref' | 'data'>
 
 export interface GridItem {
   'data-index': number
@@ -287,4 +299,10 @@ export interface ScrollIntoViewLocation {
   index: number
   behavior?: 'auto' | 'smooth'
   done?: () => void
+}
+
+export interface ScrollContainerState {
+  scrollHeight: number
+  scrollTop: number
+  viewportHeight: number
 }
