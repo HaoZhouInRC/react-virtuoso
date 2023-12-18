@@ -1,3 +1,5 @@
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
+/* eslint-disable no-continue */
 import { Log, LogLevel } from '../loggerSystem'
 import { SizeFunction, SizeRange } from '../sizeSystem'
 import { useSizeWithElRef } from './useSize'
@@ -11,6 +13,8 @@ export default function useChangedListContentsSizes(
   gap?: (gap: number) => void,
   customScrollParent?: HTMLElement
 ) {
+  const { externalWindow = window } = useRcPortalWindowContext()
+
   return useSizeWithElRef((el: HTMLElement) => {
     const ranges = getChangedChildSizes(el.children, itemSize, 'offsetHeight', log)
     let scrollableElement = el.parentElement!
@@ -25,7 +29,7 @@ export default function useChangedListContentsSizes(
     const scrollTop = customScrollParent
       ? customScrollParent.scrollTop
       : windowScrolling
-      ? window.pageYOffset || document.documentElement.scrollTop
+      ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
       : scrollableElement.scrollTop
 
     const scrollHeight = customScrollParent
