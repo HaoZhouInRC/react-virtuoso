@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as u from '@virtuoso.dev/urx'
+
 import { domIOSystem } from './domIOSystem'
 
 export const UP = 'up' as const
@@ -87,7 +89,7 @@ export const stateFlagsSystem = u.system(([{ scrollContainerState, scrollTop, vi
   const atBottomState = u.streamFromEmitter(
     u.pipe(
       u.combineLatest(scrollContainerState, u.duc(viewportHeight), u.duc(headerHeight), u.duc(footerHeight), u.duc(atBottomThreshold)),
-      u.scan((current, [[scrollTop, scrollHeight], viewportHeight, _headerHeight, _footerHeight, atBottomThreshold]) => {
+      u.scan((current, [{ scrollTop, scrollHeight }, viewportHeight, _headerHeight, _footerHeight, atBottomThreshold]) => {
         const isAtBottom = scrollTop + viewportHeight - scrollHeight > -atBottomThreshold
         const state = {
           viewportHeight,
@@ -141,30 +143,30 @@ export const stateFlagsSystem = u.system(([{ scrollContainerState, scrollTop, vi
     u.pipe(
       scrollContainerState,
       u.scan(
-        (current, [scrollTop, scrollHeight]) => {
+        (current, { scrollTop, scrollHeight, viewportHeight }) => {
           if (current.scrollHeight !== scrollHeight) {
-            if (current.scrollTop !== scrollTop) {
+            const atBottom = scrollTop === scrollHeight - viewportHeight
+
+            if (current.scrollTop !== scrollTop && atBottom) {
               return {
                 scrollHeight,
                 scrollTop,
                 jump: current.scrollTop - scrollTop,
                 changed: true,
               }
-            } else {
-              return {
-                scrollHeight,
-                scrollTop,
-                jump: 0,
-                changed: true,
-              }
             }
-          } else {
             return {
-              scrollTop,
               scrollHeight,
+              scrollTop,
               jump: 0,
-              changed: false,
+              changed: true,
             }
+          }
+          return {
+            scrollTop,
+            scrollHeight,
+            jump: 0,
+            changed: false,
           }
         },
         { scrollHeight: 0, jump: 0, scrollTop: 0, changed: false }
@@ -190,7 +192,7 @@ export const stateFlagsSystem = u.system(([{ scrollContainerState, scrollTop, vi
   u.connect(
     u.pipe(
       scrollContainerState,
-      u.map(([scrollTop]) => scrollTop),
+      u.map(({ scrollTop }) => scrollTop),
       u.distinctUntilChanged(),
       u.scan(
         (acc, scrollTop) => {
@@ -200,9 +202,15 @@ export const stateFlagsSystem = u.system(([{ scrollContainerState, scrollTop, vi
             return { direction: acc.direction, prevScrollTop: scrollTop }
           }
 
-          return { direction: scrollTop < acc.prevScrollTop ? UP : DOWN, prevScrollTop: scrollTop }
+          return {
+            direction: scrollTop < acc.prevScrollTop ? UP : DOWN,
+            prevScrollTop: scrollTop,
+          }
         },
-        { direction: DOWN, prevScrollTop: 0 } as { direction: ScrollDirection; prevScrollTop: number }
+        { direction: DOWN, prevScrollTop: 0 } as {
+          direction: ScrollDirection
+          prevScrollTop: number
+        }
       ),
       u.map((value) => value.direction)
     ),

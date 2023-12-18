@@ -1,27 +1,27 @@
 import { ReactElement, Ref } from 'react'
 
+import { Grid } from './Grid'
 import {
   Components,
   ComputeItemKey,
+  FixedHeaderContent,
   FollowOutput,
   GridComponents,
   GridComputeItemKey,
   GridItemContent,
+  GridRootProps,
   GroupContent,
   GroupItemContent,
   IndexLocationWithAlign,
   ItemContent,
   ListItem,
   ListRange,
+  ListRootProps,
+  ScrollIntoViewLocation,
   ScrollSeekConfiguration,
   TableComponents,
-  FixedHeaderContent,
-  ScrollIntoViewLocation,
-  ListRootProps,
-  GridRootProps,
 } from './interfaces'
 import { List } from './List'
-import { Grid } from './Grid'
 import { Table } from './Table'
 
 export interface VirtuosoProps<D, C> extends ListRootProps {
@@ -234,6 +234,11 @@ export interface VirtuosoProps<D, C> extends ListRootProps {
    * By default `4`. Redefine to change how much away from the bottom the scroller can be before the list is not considered not at bottom.
    */
   atBottomThreshold?: number
+
+  /**
+   * Reduces an edge case blinking visible in React18 by enabling flushSync in certain changes.
+   */
+  react18ConcurrentRendering?: boolean
 }
 
 export interface GroupedVirtuosoProps<D, C> extends Omit<VirtuosoProps<D, C>, 'totalCount' | 'itemContent'> {
@@ -443,6 +448,11 @@ export interface TableVirtuosoProps<D, C> extends Omit<VirtuosoProps<D, C>, 'com
    * By default `4`. Redefine to change how much away from the bottom the scroller can be before the list is not considered not at bottom.
    */
   atBottomThreshold?: number
+
+  /**
+   * Reduces an edge case blinking visible in React18 by enabling flushSync in certain changes.
+   */
+  react18ConcurrentRendering?: boolean
 }
 
 export interface VirtuosoGridProps<C extends unknown = unknown> extends GridRootProps {
@@ -581,11 +591,15 @@ export const Virtuoso = List as <ItemData extends unknown = any, Context extends
 ) => ReactElement
 
 export const GroupedVirtuoso = List as <ItemData extends unknown = any, Context extends unknown = any>(
-  props: GroupedVirtuosoProps<ItemData, Context> & { ref?: Ref<GroupedVirtuosoHandle> }
+  props: GroupedVirtuosoProps<ItemData, Context> & {
+    ref?: Ref<GroupedVirtuosoHandle>
+  }
 ) => ReactElement
 
 export const TableVirtuoso = Table as <ItemData extends unknown = any, Context extends unknown = any>(
-  props: TableVirtuosoProps<ItemData, Context> & { ref?: Ref<TableVirtuosoHandle> }
+  props: TableVirtuosoProps<ItemData, Context> & {
+    ref?: Ref<TableVirtuosoHandle>
+  }
 ) => ReactElement
 
 export const VirtuosoGrid = Grid as <Context extends unknown = any>(

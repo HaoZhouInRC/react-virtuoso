@@ -1,4 +1,5 @@
 import { ComponentPropsWithRef, ComponentType, Key, ReactNode } from 'react'
+
 export interface ListRange {
   startIndex: number
   endIndex: number
@@ -8,7 +9,7 @@ export interface ItemContent<D, C> {
   (index: number, data: D, context: C): ReactNode
 }
 
-export type FixedHeaderContent = (() => React.ReactChildren | React.ReactNode) | null
+export type FixedHeaderContent = (() => React.ReactNode) | null
 
 export interface GroupItemContent<D, C> {
   (index: number, groupIndex: number, data: D, context: C): ReactNode
@@ -247,9 +248,9 @@ export interface IndexLocationWithAlign {
   offset?: number
 }
 
-export type ListRootProps = Omit<React.HTMLProps<'div'>, 'ref' | 'data'>
-export type TableRootProps = Omit<React.HTMLProps<'table'>, 'ref' | 'data'>
-export type GridRootProps = Omit<React.HTMLProps<'div'>, 'ref' | 'data'>
+export type ListRootProps = Omit<React.HTMLProps<HTMLDivElement>, 'ref' | 'data'>
+export type TableRootProps = Omit<React.HTMLProps<HTMLTableElement>, 'ref' | 'data'>
+export type GridRootProps = Omit<React.HTMLProps<HTMLDivElement>, 'ref' | 'data'>
 
 export interface GridItem {
   'data-index': number
@@ -298,4 +299,10 @@ export interface ScrollIntoViewLocation {
   index: number
   behavior?: 'auto' | 'smooth'
   done?: () => void
+}
+
+export interface ScrollContainerState {
+  scrollHeight: number
+  scrollTop: number
+  viewportHeight: number
 }

@@ -1,3 +1,5 @@
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
+import { ScrollContainerState } from '../interfaces'
 import { Log, LogLevel } from '../loggerSystem'
 import { SizeFunction, SizeRange } from '../sizeSystem'
 import useSize from './useSize'
@@ -6,10 +8,12 @@ export default function useChangedListContentsSizes(
   callback: (ranges: SizeRange[]) => void,
   itemSize: SizeFunction,
   enabled: boolean,
-  scrollContainerStateCallback: (state: [number, number]) => void,
+  scrollContainerStateCallback: (state: ScrollContainerState) => void,
   log: Log,
   customScrollParent?: HTMLElement
 ) {
+  const { externalWindow = window } = useRcPortalWindowContext()
+
   return useSize((el: HTMLElement) => {
     const ranges = getChangedChildSizes(el.children, itemSize, 'offsetHeight', log)
     let scrollableElement = el.parentElement!
@@ -22,12 +26,15 @@ export default function useChangedListContentsSizes(
       ? customScrollParent.scrollTop
       : // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       (scrollableElement.firstElementChild! as HTMLDivElement).dataset['viewportType']! === 'window'
-      ? window.pageYOffset || document.documentElement.scrollTop
+      ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
       : scrollableElement.scrollTop
 
-    customScrollParent
-      ? scrollContainerStateCallback([Math.max(scrollTop, 0), customScrollParent.scrollHeight])
-      : scrollContainerStateCallback([Math.max(scrollTop, 0), scrollableElement.scrollHeight])
+    scrollContainerStateCallback({
+      scrollTop: Math.max(scrollTop, 0),
+      scrollHeight: (customScrollParent ?? scrollableElement).scrollHeight,
+      viewportHeight: (customScrollParent ?? scrollableElement).offsetHeight,
+    })
+
     if (ranges !== null) {
       callback(ranges)
     }
@@ -50,6 +57,7 @@ function getChangedChildSizes(children: HTMLCollection, itemSize: SizeFunction, 
       continue
     }
 
+    // eslint-disable-next-line radix
     const index = parseInt(child.dataset.index!)
     const knownSize = parseFloat(child.dataset.knownSize!)
     const size = itemSize(child, field)

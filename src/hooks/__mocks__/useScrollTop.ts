@@ -1,13 +1,21 @@
-type CallbackRefParam = HTMLElement | null
+import { ScrollContainerState } from '../../interfaces';
 
-export default function useSize(callback: (state: [number, number]) => void) {
+type CallbackRefParam = HTMLElement | null;
+
+export default function useSize(
+  callback: (state: ScrollContainerState) => void,
+) {
   const scrollerRef = (elRef: CallbackRefParam) => {
     if (elRef) {
-      ;(elRef as any).triggerScroll = (state: [number, number]) => {
-        callback(state)
-      }
+      (elRef as any).triggerScroll = (state: ScrollContainerState) => {
+        callback(state);
+      };
     }
-  }
+  };
 
-  return { scrollerRef, scrollByCallback: () => {}, scrollToCallback: () => {} }
+  return {
+    scrollerRef,
+    scrollByCallback: () => {},
+    scrollToCallback: () => {},
+  };
 }
