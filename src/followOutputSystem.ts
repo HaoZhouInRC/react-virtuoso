@@ -35,6 +35,7 @@ export const followOutputSystem = u.system(
     { scrollingInProgress },
   ]) => {
     const followOutput = u.statefulStream<FollowOutput>(false)
+    const autoscrollToBottom = u.stream<true>()
     let pendingScrollHandle: any = null
 
     function scrollToBottom(followOutputBehavior: FollowOutputScalarType) {
@@ -78,6 +79,16 @@ export const followOutputSystem = u.system(
       }
     )
 
+    function trapNextSizeIncrease(followOutput: boolean) {
+      const cancel = u.handleNext(atBottomState, (state) => {
+        if (followOutput && !state.atBottom && state.notAtBottomBecause === 'SIZE_INCREASED' && !pendingScrollHandle) {
+          u.getValue(log)('scrolling to bottom due to increased size', {}, LogLevel.DEBUG)
+          scrollToBottom('auto')
+        }
+      })
+      setTimeout(cancel, 100)
+    }
+
     u.subscribe(
       u.pipe(
         u.combineLatest(u.duc(followOutput), totalCount, propsReady),
@@ -92,15 +103,13 @@ export const followOutputSystem = u.system(
         u.withLatestFrom(followOutput, totalCount)
       ),
       ([, followOutput]) => {
-        const cancel = u.handleNext(atBottomState, (state) => {
-          if (followOutput && !state.atBottom && state.notAtBottomBecause === 'SIZE_INCREASED' && !pendingScrollHandle) {
-            u.getValue(log)('scrolling to bottom due to increased size', {}, LogLevel.DEBUG)
-            scrollToBottom('auto')
-          }
-        })
-        setTimeout(cancel, 100)
+        trapNextSizeIncrease(followOutput !== false)
       }
     )
+
+    u.subscribe(autoscrollToBottom, () => {
+      trapNextSizeIncrease(u.getValue(followOutput) !== false)
+    })
 
     u.subscribe(u.combineLatest(u.duc(followOutput), atBottomState), ([followOutput, state]) => {
       if (followOutput && !state.atBottom && state.notAtBottomBecause === 'VIEWPORT_HEIGHT_DECREASING') {
@@ -108,7 +117,7 @@ export const followOutputSystem = u.system(
       }
     })
 
-    return { followOutput }
+    return { followOutput, autoscrollToBottom }
   },
   u.tup(sizeSystem, stateFlagsSystem, scrollToIndexSystem, initialTopMostItemIndexSystem, propsReadySystem, loggerSystem, domIOSystem)
 )
