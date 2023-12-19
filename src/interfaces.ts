@@ -32,7 +32,7 @@ export type GroupProps = Pick<ComponentPropsWithRef<'div'>, 'style' | 'children'
 }
 
 export type TopItemListProps = Pick<ComponentPropsWithRef<'div'>, 'style' | 'children'>
-export type TableProps = Pick<ComponentPropsWithRef<'table'>, 'style'>
+export type TableProps = Pick<ComponentPropsWithRef<'table'>, 'style' | 'children'>
 
 /**
  * Passed to the Components.TableBody custom component
@@ -307,6 +307,7 @@ export interface WindowViewportInfo {
 }
 
 export interface ScrollIntoViewLocationOptions {
+  align?: 'start' | 'center' | 'end'
   behavior?: 'auto' | 'smooth'
   done?: () => void
 }
@@ -326,3 +327,6 @@ export interface ScrollContainerState {
   scrollTop: number
   viewportHeight: number
 }
+
+/** Calculates the height of `el`, which will be the `Item` element in the DOM. */
+export type SizeFunction = (el: HTMLElement, field: 'offsetHeight' | 'offsetWidth') => number

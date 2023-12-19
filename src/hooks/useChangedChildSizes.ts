@@ -1,9 +1,9 @@
 import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 /* eslint-disable no-continue */
 import { Log, LogLevel } from '../loggerSystem'
-import { SizeFunction, SizeRange } from '../sizeSystem'
+import { SizeRange } from '../sizeSystem'
 import { useSizeWithElRef } from './useSize'
-import { ScrollContainerState } from '../interfaces'
+import { SizeFunction, ScrollContainerState } from '../interfaces'
 export default function useChangedListContentsSizes(
   callback: (ranges: SizeRange[]) => void,
   itemSize: SizeFunction,
@@ -97,12 +97,12 @@ function getChangedChildSizes(children: HTMLCollection, itemSize: SizeFunction, 
   return results
 }
 
-function resolveGapValue(property: string, value: string, log: Log) {
-  if (value !== 'normal' && !value.endsWith('px')) {
+function resolveGapValue(property: string, value: string | undefined, log: Log) {
+  if (value !== 'normal' && !value?.endsWith('px')) {
     log(`${property} was not resolved to pixel value correctly`, value, LogLevel.WARN)
   }
   if (value === 'normal') {
     return 0
   }
-  return parseInt(value, 10)
+  return parseInt(value ?? '0', 10)
 }
