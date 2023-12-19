@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react'
 import * as u from '@virtuoso.dev/urx'
 import { correctItemSize } from '../utils/correctItemSize'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 import { ScrollContainerState } from '../interfaces'
 import { flushSync } from 'react-dom'
 import { approximatelyEqual } from '../utils/approximatelyEqual'
@@ -18,14 +19,15 @@ export default function useScrollTop(
   const scrollTopTarget = useRef<any>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const shouldFlushSync = useRef(false)
+  const { externalWindow = window } = useRcPortalWindowContext()
 
   const handler = useCallback(
     (ev: Event) => {
       const el = ev.target as HTMLElement
-      const windowScroll = (el as any) === window || (el as any) === document
-      const scrollTop = windowScroll ? window.pageYOffset || document.documentElement.scrollTop : el.scrollTop
-      const scrollHeight = windowScroll ? document.documentElement.scrollHeight : el.scrollHeight
-      const viewportHeight = windowScroll ? window.innerHeight : el.offsetHeight
+      const windowScroll = (el as any) === externalWindow || (el as any) === externalWindow.document
+      const scrollTop = windowScroll ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop : el.scrollTop
+      const scrollHeight = windowScroll ? externalWindow.document.documentElement.scrollHeight : el.scrollHeight
+      const viewportHeight = windowScroll ? externalWindow.innerHeight : el.offsetHeight
 
       const call = () => {
         scrollContainerStateCallback({
@@ -53,7 +55,7 @@ export default function useScrollTop(
         }
       }
     },
-    [scrollContainerStateCallback, smoothScrollTargetReached]
+    [externalWindow, scrollContainerStateCallback, smoothScrollTargetReached]
   )
 
   useEffect(() => {
@@ -81,11 +83,14 @@ export default function useScrollTop(
     let scrollHeight: number
     let scrollTop: number
 
-    if (scrollerElement === window) {
+    if (scrollerElement === externalWindow) {
       // this is not a mistake
-      scrollHeight = Math.max(correctItemSize(document.documentElement, 'height'), document.documentElement.scrollHeight)
-      offsetHeight = window.innerHeight
-      scrollTop = document.documentElement.scrollTop
+      scrollHeight = Math.max(
+        correctItemSize(externalWindow.document.documentElement, 'height'),
+        externalWindow.document.documentElement.scrollHeight
+      )
+      offsetHeight = externalWindow.innerHeight
+      scrollTop = externalWindow.document.documentElement.scrollTop
     } else {
       scrollHeight = (scrollerElement as HTMLElement).scrollHeight
       offsetHeight = correctItemSize(scrollerElement as HTMLElement, 'height')
