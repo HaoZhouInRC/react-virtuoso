@@ -265,11 +265,16 @@ export interface GroupIndexLocationWithAlign extends LocationOptions {
 
 export type IndexLocationWithAlign = FlatIndexLocationWithAlign | GroupIndexLocationWithAlign
 
-export type ListRootProps = Omit<React.HTMLProps<'div'>, 'ref' | 'data'>
-export type TableRootProps = Omit<React.HTMLProps<'table'>, 'ref' | 'data'>
-export type GridRootProps = Omit<React.HTMLProps<'div'>, 'ref' | 'data'>
+export type ListRootProps = Omit<React.HTMLProps<HTMLDivElement>, 'ref' | 'data'>
+export type TableRootProps = Omit<React.HTMLProps<HTMLTableElement>, 'ref' | 'data'>
+export type GridRootProps = Omit<React.HTMLProps<HTMLDivElement>, 'ref' | 'data'>
 
-export interface GridItem {
+export interface GridItem<D> {
+  index: number
+  data?: D
+}
+
+export interface GridItemProps {
   'data-index': number
   className?: string
 }
@@ -278,7 +283,7 @@ export interface GridComponents<Context = any> {
   /**
    * Set to customize the item wrapping element. Use only if you would like to render list from elements different than a `div`.
    */
-  Item?: ComponentType<GridItem & { context?: Context }>
+  Item?: ComponentType<GridItemProps & { context?: Context }>
 
   /**
    * Set to customize the outermost scrollable element. This should not be necessary in general,
@@ -292,18 +297,30 @@ export interface GridComponents<Context = any> {
   List?: ComponentType<GridListProps & { context?: Context }>
 
   /**
+   * Set to render a component at the top of the list.
+   *
+   * The header remains above the top items and does not remain sticky.
+   */
+  Header?: ComponentType<{ context?: Context }>
+
+  /**
+   * Set to render a component at the bottom of the list.
+   */
+  Footer?: ComponentType<{ context?: Context }>
+
+  /**
    * Set to render an item placeholder when the user scrolls fast.
    * See the `scrollSeekConfiguration` property for more details.
    */
   ScrollSeekPlaceholder?: ComponentType<GridScrollSeekPlaceholderProps & { context?: Context }>
 }
 
-export interface GridComputeItemKey {
-  (index: number): Key
+export interface GridComputeItemKey<D, C> {
+  (index: number, item: D, context: C): Key
 }
 
-export interface GridItemContent<C> {
-  (index: number, context: C): ReactNode
+export interface GridItemContent<D, C> {
+  (index: number, data: D, context: C): ReactNode
 }
 
 export interface WindowViewportInfo {

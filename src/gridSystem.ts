@@ -2,7 +2,7 @@ import * as u from '@virtuoso.dev/urx'
 
 import { rangeComparator, tupleComparator } from './comparators'
 import { domIOSystem } from './domIOSystem'
-import { FlatIndexLocationWithAlign } from './interfaces'
+import { FlatIndexLocationWithAlign, GridItem } from './interfaces'
 import { propsReadySystem } from './propsReadySystem'
 import { scrollSeekSystem } from './scrollSeekSystem'
 import { IndexLocation, normalizeIndexLocation } from './scrollToIndexSystem'
@@ -10,6 +10,8 @@ import { sizeRangeSystem } from './sizeRangeSystem'
 import { stateFlagsSystem } from './stateFlagsSystem'
 import { loggerSystem } from './loggerSystem'
 import { windowScrollerSystem } from './windowScrollerSystem'
+
+export type Data = unknown[] | undefined
 
 export interface Gap {
   row: number
@@ -21,17 +23,13 @@ export interface ElementDimensions {
   height: number
 }
 
-export interface GridItem {
-  index: number
-}
-
 export interface GridLayout {
   top: number
   bottom: number
 }
 
 export interface GridState extends GridLayout {
-  items: GridItem[]
+  items: GridItem<unknown>[]
   offsetTop: number
   offsetBottom: number
   itemHeight: number
@@ -60,8 +58,17 @@ const PROBE_GRID_STATE: GridState = {
 
 const { round, ceil, floor, min, max } = Math
 
-function buildItems(startIndex: number, endIndex: number) {
-  return Array.from({ length: endIndex - startIndex + 1 }).map((_, i) => ({ index: i + startIndex } as GridItem))
+function buildProbeGridState<D = unknown>(items: GridItem<D>[]): GridState {
+  return {
+    ...PROBE_GRID_STATE,
+    items: items,
+  }
+}
+
+function buildItems<D>(startIndex: number, endIndex: number, data: D[] | undefined) {
+  return Array.from({ length: endIndex - startIndex + 1 }).map(
+    (_, i) => ({ index: i + startIndex, data: data?.[i + startIndex] } as GridItem<D>)
+  )
 }
 
 function gapComparator(prev: Gap, next: Gap) {
@@ -70,7 +77,7 @@ function gapComparator(prev: Gap, next: Gap) {
 export const gridSystem = u.system(
   ([
     { overscan, visibleRange, listBoundary },
-    { scrollTop, viewportHeight, scrollBy, scrollTo, smoothScrollTargetReached, scrollContainerState },
+    { scrollTop, viewportHeight, scrollBy, scrollTo, smoothScrollTargetReached, scrollContainerState, footerHeight, headerHeight },
     stateFlags,
     scrollSeek,
     { propsReady, didMount },
@@ -91,16 +98,16 @@ export const gridSystem = u.system(
     const scrollToIndex = u.stream<IndexLocation>()
     const scrollHeight = u.stream<number>()
     const deviation = u.statefulStream(0)
+    const data = u.statefulStream<Data>(undefined)
     const gap = u.statefulStream<Gap>({ row: 0, column: 0 })
 
     u.connect(
       u.pipe(
-        didMount,
-        u.withLatestFrom(initialItemCount),
+        u.combineLatest(didMount, initialItemCount, data),
         u.filter(([, count]) => count !== 0),
-        u.map(([, count]) => {
+        u.map(([, count, data]) => {
           return {
-            items: buildItems(0, count - 1),
+            items: buildItems(0, count - 1, data),
             top: 0,
             bottom: 0,
             offsetBottom: 0,
@@ -119,10 +126,11 @@ export const gridSystem = u.system(
           u.duc(totalCount),
           visibleRange,
           u.duc(gap, gapComparator),
-          u.duc(itemDimensions, (prev, next) => prev && prev.width === next.width && prev.height === next.height)
+          u.duc(itemDimensions, (prev, next) => prev && prev.width === next.width && prev.height === next.height),
+          data
         ),
         u.withLatestFrom(viewportDimensions),
-        u.map(([[totalCount, [startOffset, endOffset], gap, item], viewport]) => {
+        u.map(([[totalCount, [startOffset, endOffset], gap, item, data], viewport]) => {
           const { row: rowGap, column: columnGap } = gap
           const { height: itemHeight, width: itemWidth } = item
           const { width: viewportWidth } = viewport
@@ -132,17 +140,17 @@ export const gridSystem = u.system(
           }
 
           if (itemWidth === 0) {
-            return PROBE_GRID_STATE
+            return buildProbeGridState(buildItems(0, 0, data))
           }
 
           const perRow = itemsPerRow(viewportWidth, itemWidth, columnGap)
 
           let startIndex = perRow * floor((startOffset + rowGap) / (itemHeight + rowGap))
           let endIndex = perRow * ceil((endOffset + rowGap) / (itemHeight + rowGap)) - 1
-          endIndex = max(0, min(totalCount - 1, endIndex))
+          endIndex = min(totalCount - 1, max(endIndex, perRow - 1))
           startIndex = min(endIndex, max(0, startIndex))
 
-          const items = buildItems(startIndex, endIndex)
+          const items = buildItems(startIndex, endIndex, data)
           const { top, bottom } = gridLayout(viewport, gap, item, items)
           const rowCount = ceil(totalCount / perRow)
           const totalHeight = rowCount * itemHeight + (rowCount - 1) * rowGap
@@ -160,6 +168,15 @@ export const gridSystem = u.system(
         })
       ),
       gridState
+    )
+
+    u.connect(
+      u.pipe(
+        data,
+        u.filter((data) => data !== undefined),
+        u.map((data) => data!.length)
+      ),
+      totalCount
     )
 
     u.connect(
@@ -277,6 +294,7 @@ export const gridSystem = u.system(
 
     return {
       // input
+      data,
       totalCount,
       viewportDimensions,
       itemDimensions,
@@ -294,6 +312,8 @@ export const gridSystem = u.system(
       windowScrollContainerState,
       deviation,
       scrollContainerState,
+      footerHeight,
+      headerHeight,
       initialItemCount,
       gap,
       ...scrollSeek,
@@ -312,7 +332,7 @@ export const gridSystem = u.system(
   u.tup(sizeRangeSystem, domIOSystem, stateFlagsSystem, scrollSeekSystem, propsReadySystem, windowScrollerSystem, loggerSystem)
 )
 
-function gridLayout(viewport: ElementDimensions, gap: Gap, item: ElementDimensions, items: GridItem[]): GridLayout {
+function gridLayout<D>(viewport: ElementDimensions, gap: Gap, item: ElementDimensions, items: GridItem<D>[]): GridLayout {
   const { height: itemHeight } = item
   if (itemHeight === undefined || items.length === 0) {
     return { top: 0, bottom: 0 }
