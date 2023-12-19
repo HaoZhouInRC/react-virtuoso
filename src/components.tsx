@@ -1,5 +1,6 @@
 import { ReactElement, Ref } from 'react'
 
+import { Grid } from './Grid'
 import {
   Components,
   ComputeItemKey,
@@ -25,7 +26,6 @@ import {
   FixedFooterContent,
 } from './interfaces'
 import { List } from './List'
-import { Grid } from './Grid'
 import { Table } from './Table'
 
 export interface VirtuosoProps<D, C> extends ListRootProps {
