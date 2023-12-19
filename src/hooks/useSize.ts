@@ -14,7 +14,6 @@ export function useSizeWithElRef(callback: (e: HTMLElement) => void, enabled = t
     void 0
   }
 
-  // TODO: fix after upgrade ts
   if (typeof externalWindow['ResizeObserver'] !== 'undefined') {
     const observer = new externalWindow['ResizeObserver']((entries: ResizeObserverEntry[]) => {
       const element = entries[0].target as HTMLElement

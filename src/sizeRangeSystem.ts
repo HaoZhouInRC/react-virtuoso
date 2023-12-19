@@ -52,7 +52,6 @@ export const sizeRangeSystem = u.system(
             scrollTop,
             viewportHeight,
             headerHeight,
-            // @ts-ignore
             [listTop, listBottom],
             overscan,
             topListHeight,

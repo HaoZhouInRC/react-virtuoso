@@ -1,5 +1,6 @@
 {
   "include": ["src", "types"],
+  "files": ["typing.d.ts"],
   "compilerOptions": {
     "module": "esnext",
     "target": "ESNext",
@@ -18,6 +19,6 @@
     "jsx": "react",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["@types/jest"]
+    "types": ["@types/jest"],
   }
 }

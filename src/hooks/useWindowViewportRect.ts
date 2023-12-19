@@ -49,7 +49,7 @@ export default function useWindowViewportRectRef(callback: (info: WindowViewport
   useEffect(() => {
     if (customScrollParent) {
       customScrollParent.addEventListener('scroll', scrollAndResizeEventHandler)
-      const observer = new externalWindow['ResizeObserver'](scrollAndResizeEventHandler)
+      const observer = new externalWindow.ResizeObserver(scrollAndResizeEventHandler)
       observer.observe(customScrollParent)
       return () => {
         customScrollParent.removeEventListener('scroll', scrollAndResizeEventHandler)
