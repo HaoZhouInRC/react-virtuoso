@@ -23,4 +23,5 @@
     "target": "ESNext",
   },
   "include": ["src"],
+  "files": ["typing.d.ts"]
 }
