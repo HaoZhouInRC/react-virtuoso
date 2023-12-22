@@ -150,15 +150,15 @@ export interface TableComponents<Data = unknown, Context = unknown> {
   Table?: React.ComponentType<TableProps & { context?: Context }>
 
   /**
-   * Set to render a fixed header at the top of the table (`thead`). use [[fixedHeaderHeight]] to set the contents
+   * Set to render a fixed header at the top of the table (`thead`). use [[fixedHeaderContent]] to set the contents
    *
    */
-  TableHead?: React.ComponentType<Pick<React.ComponentPropsWithRef<'thead'>, 'style' | 'ref'> & { context?: Context }>
+  TableHead?: React.ComponentType<Pick<React.ComponentPropsWithRef<'thead'>, 'style' | 'children' | 'ref'> & { context?: Context }>
 
   /**
    * Set to render a fixed footer at the bottom of the table (`tfoot`). use [[fixedFooterContent]] to set the contents
    */
-  TableFoot?: React.ComponentType<Pick<React.ComponentPropsWithRef<'tfoot'>, 'style' | 'ref'> & { context?: Context }>
+  TableFoot?: React.ComponentType<Pick<React.ComponentPropsWithRef<'tfoot'>, 'style' | 'children' | 'ref'> & { context?: Context }>
 
   /**
    * Set to customize the item wrapping element. Default is `tr`.
@@ -398,3 +398,16 @@ export interface ScrollContainerState {
 
 /** Calculates the height of `el`, which will be the `Item` element in the DOM. */
 export type SizeFunction = (el: HTMLElement, field: 'offsetHeight' | 'offsetWidth') => number
+
+export interface SizeRange {
+  startIndex: number
+  endIndex: number
+  size: number
+}
+
+export interface StateSnapshot {
+  ranges: SizeRange[]
+  scrollTop: number
+}
+
+export type StateCallback = (state: StateSnapshot) => void

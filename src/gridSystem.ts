@@ -99,8 +99,9 @@ export const gridSystem = /*#__PURE__*/ u.system(
 
     u.connect(
       u.pipe(
-        u.combineLatest(didMount, initialItemCount, data),
-        u.filter(([, count]) => count !== 0),
+        didMount,
+        u.withLatestFrom(initialItemCount, data),
+        u.filter(([didMount, count]) => didMount && count !== 0),
         u.map(([, count, data]) => {
           return {
             items: buildItems(0, count - 1, data),
@@ -161,7 +162,7 @@ export const gridSystem = /*#__PURE__*/ u.system(
     u.connect(
       u.pipe(
         data,
-        u.filter((data) => data !== undefined),
+        u.filter(u.isDefined),
         u.map((data) => data!.length)
       ),
       totalCount
@@ -188,12 +189,25 @@ export const gridSystem = /*#__PURE__*/ u.system(
       listBoundary
     )
 
+    const hasScrolled = u.statefulStream(false)
+
+    u.connect(
+      u.pipe(
+        scrollTop,
+        u.withLatestFrom(hasScrolled),
+        u.map(([scrollTop, hasScrolled]) => {
+          return hasScrolled || scrollTop !== 0
+        })
+      ),
+      hasScrolled
+    )
+
     const endReached = u.streamFromEmitter(
       u.pipe(
         u.duc(gridState),
         u.filter(({ items }) => items.length > 0),
-        u.withLatestFrom(totalCount),
-        u.filter(([{ items }, totalCount]) => items[items.length - 1].index === totalCount - 1),
+        u.withLatestFrom(totalCount, hasScrolled),
+        u.filter(([{ items }, totalCount, hasScrolled]) => hasScrolled && items[items.length - 1].index === totalCount - 1),
         u.map(([, totalCount]) => totalCount - 1),
         u.distinctUntilChanged()
       )
@@ -335,6 +349,6 @@ function itemTop(viewport: ElementDimensions, gap: Gap, item: ElementDimensions,
   return top > 0 ? top + gap.row : top
 }
 
-function itemsPerRow(viewportWidth: number, itemWidth: number, gap: number) {
-  return max(1, floor((viewportWidth + gap) / (itemWidth + gap)))
+export function itemsPerRow(viewportWidth: number, itemWidth: number, gap: number) {
+  return max(1, floor((viewportWidth + gap) / (floor(itemWidth) + gap)))
 }

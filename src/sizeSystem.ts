@@ -4,13 +4,7 @@ import * as arrayBinarySearch from './utils/binaryArraySearch'
 import { correctItemSize } from './utils/correctItemSize'
 import { Log, loggerSystem, LogLevel } from './loggerSystem'
 import { recalcSystem } from './recalcSystem'
-import { SizeFunction } from './interfaces'
-
-export interface SizeRange {
-  startIndex: number
-  endIndex: number
-  size: number
-}
+import { SizeFunction, SizeRange } from './interfaces'
 
 export type Data = readonly unknown[] | undefined
 
@@ -279,6 +273,15 @@ export function hasGroups(sizes: SizeState) {
   return !empty(sizes.groupOffsetTree)
 }
 
+export function sizeTreeToRanges(sizeTree: AANode<number>): SizeRange[] {
+  return walk(sizeTree).map(({ k: startIndex, v: size }, index, sizeArray) => {
+    const nextSize = sizeArray[index + 1]
+    const endIndex = nextSize ? nextSize.k - 1 : Infinity
+
+    return { startIndex, endIndex, size }
+  })
+}
+
 type OptionalNumber = number | undefined
 
 const SIZE_MAP = {
@@ -343,13 +346,14 @@ export const sizeSystem = u.system(
 
     // decreasing the total count should remove any existing entries
     // beyond the last index - do this by publishing the default size as a range over them.
+    // This causes some size loss in for the last items, but it's better than having the wrong measurements
+    // see #896
     u.connect(
       u.pipe(
         totalCount,
         u.withLatestFrom(sizes),
-        u.filter(([totalCount, { lastIndex, groupIndices }]) => {
-          // if we have groups, we will take care of it in the
-          return totalCount < lastIndex && groupIndices.length === 0
+        u.filter(([totalCount, { lastIndex }]) => {
+          return totalCount < lastIndex
         }),
         u.map(([totalCount, { lastIndex, lastSize }]) => {
           return [
@@ -420,9 +424,11 @@ export const sizeSystem = u.system(
           u.publish(unshiftWith, offset + affectedGroupCount(offset, groupIndices))
         } else if (offset < 0) {
           const prevGroupIndicesValue = u.getValue(prevGroupIndices)
+
           if (prevGroupIndicesValue.length > 0) {
-            u.publish(shiftWith, offset - affectedGroupCount(-offset, prevGroupIndicesValue))
+            offset -= affectedGroupCount(-offset, prevGroupIndicesValue)
           }
+          u.publish(shiftWith, offset)
         }
       }
     )
@@ -456,7 +462,8 @@ export const sizeSystem = u.system(
 
             while (prependedGroupItemsCount < unshiftWith) {
               const theGroupIndex = sizes.groupIndices[groupIndex]
-              const groupItemCount = sizes.groupIndices[groupIndex + 1] - theGroupIndex - 1
+              const groupItemCount =
+                sizes.groupIndices.length === groupIndex + 1 ? Infinity : sizes.groupIndices[groupIndex + 1] - theGroupIndex - 1
 
               initialRanges.push({
                 startIndex: theGroupIndex,
@@ -549,6 +556,10 @@ export const sizeSystem = u.system(
         u.map(([shiftWith, sizes, gap]) => {
           const groupedMode = sizes.groupIndices.length > 0
           if (groupedMode) {
+            // we can't shift an empty tree
+            if (empty(sizes.sizeTree)) {
+              return sizes
+            }
             let newSizeTree = newTree<number>()
             const prevGroupIndicesValue = u.getValue(prevGroupIndices)
             let removedItemsCount = 0
