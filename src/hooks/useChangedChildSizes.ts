@@ -36,13 +36,13 @@ export default function useChangedListContentsSizes(
       const scrollHeight = customScrollParent
         ? customScrollParent.scrollHeight
         : windowScrolling
-        ? document.documentElement.scrollHeight
+        ? externalWindow.document.documentElement.scrollHeight
         : scrollableElement.scrollHeight
 
       const viewportHeight = customScrollParent
         ? customScrollParent.offsetHeight
         : windowScrolling
-        ? window.innerHeight
+        ? externalWindow.innerHeight
         : scrollableElement.offsetHeight
 
       scrollContainerStateCallback({
@@ -57,7 +57,7 @@ export default function useChangedListContentsSizes(
         callback(ranges)
       }
     },
-    [callback, itemSize, log, gap, customScrollParent, scrollContainerStateCallback]
+    [callback, itemSize, log, gap, customScrollParent, scrollContainerStateCallback, externalWindow]
   )
 
   return useSizeWithElRef(memoedCallback, enabled)

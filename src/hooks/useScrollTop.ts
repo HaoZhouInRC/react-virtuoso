@@ -19,15 +19,14 @@ export default function useScrollTop(
   const scrollTopTarget = React.useRef<any>(null)
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const { externalWindow = window } = useRcPortalWindowContext()
-  const { document } = window
 
   const handler = React.useCallback(
     (ev: Event) => {
       const el = ev.target as HTMLElement
-      const windowScroll = (el as any) === window || (el as any) === document
-      const scrollTop = windowScroll ? window.pageYOffset || document.documentElement.scrollTop : el.scrollTop
-      const scrollHeight = windowScroll ? document.documentElement.scrollHeight : el.scrollHeight
-      const viewportHeight = windowScroll ? window.innerHeight : el.offsetHeight
+      const windowScroll = (el as any) === externalWindow || (el as any) === externalWindow.document
+      const scrollTop = windowScroll ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop : el.scrollTop
+      const scrollHeight = windowScroll ? externalWindow.document.documentElement.scrollHeight : el.scrollHeight
+      const viewportHeight = windowScroll ? externalWindow.innerHeight : el.offsetHeight
 
       const call = () => {
         scrollContainerStateCallback({
@@ -85,8 +84,8 @@ export default function useScrollTop(
     if (scrollerElement === externalWindow) {
       // this is not a mistake
       scrollHeight = Math.max(correctItemSize(document.documentElement, 'height'), document.documentElement.scrollHeight)
-      offsetHeight = window.innerHeight
-      scrollTop = document.documentElement.scrollTop
+      offsetHeight = externalWindow.innerHeight
+      scrollTop = externalWindow.document.documentElement.scrollTop
     } else {
       scrollHeight = (scrollerElement as HTMLElement).scrollHeight
       offsetHeight = correctItemSize(scrollerElement as HTMLElement, 'height')
