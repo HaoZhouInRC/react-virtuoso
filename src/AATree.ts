@@ -45,17 +45,17 @@ export function remove<T>(node: AANode<T>, key: number): AANode<T> {
   if (key === k) {
     if (empty(l)) {
       return r
-    }
-    if (empty(r)) {
+    } else if (empty(r)) {
       return l
+    } else {
+      const [lastKey, lastValue] = last(l)
+      return adjust(clone(node, { k: lastKey, v: lastValue, l: deleteLast(l) }))
     }
-    const [lastKey, lastValue] = last(l)
-    return adjust(clone(node, { k: lastKey, v: lastValue, l: deleteLast(l) }))
-  }
-  if (key < k) {
+  } else if (key < k) {
     return adjust(clone(node, { l: remove(l, key) }))
+  } else {
+    return adjust(clone(node, { r: remove(r, key) }))
   }
-  return adjust(clone(node, { r: remove(r, key) }))
 }
 
 export function find<T>(node: AANode<T>, key: number): T | undefined {
@@ -65,11 +65,11 @@ export function find<T>(node: AANode<T>, key: number): T | undefined {
 
   if (key === node.k) {
     return node.v
-  }
-  if (key < node.k) {
+  } else if (key < node.k) {
     return find(node.l, key)
+  } else {
+    return find(node.r, key)
   }
-  return find(node.r, key)
 }
 
 export function findMaxKeyValue<T>(node: AANode<T>, value: number, field: 'k' | 'v' = 'k'): [number, T | undefined] {
@@ -85,8 +85,9 @@ export function findMaxKeyValue<T>(node: AANode<T>, value: number, field: 'k' | 
     const r = findMaxKeyValue(node.r, value, field)
     if (r[0] === -Infinity) {
       return [node.k, node.v]
+    } else {
+      return r
     }
-    return r
   }
 
   return findMaxKeyValue(node.l, value, field)
@@ -98,11 +99,11 @@ export function insert<T>(node: AANode<T>, k: number, v: T): NonNilAANode<T> {
   }
   if (k === node.k) {
     return clone(node, { k, v })
-  }
-  if (k < node.k) {
+  } else if (k < node.k) {
     return rebalance(clone(node, { l: insert(node.l, k, v) }))
+  } else {
+    return rebalance(clone(node, { r: insert(node.r, k, v) }))
   }
-  return rebalance(clone(node, { r: insert(node.r, k, v) }))
 }
 
 export function walkWithin<T>(node: AANode<T>, start: number, end: number): NodeData<T>[] {
@@ -165,38 +166,43 @@ function adjust<T>(node: NonNilAANode<T>): NonNilAANode<T> {
   const { l, r, lvl } = node
   if (r.lvl >= lvl - 1 && l.lvl >= lvl - 1) {
     return node
-  }
-  if (lvl > r.lvl + 1) {
+  } else if (lvl > r.lvl + 1) {
     if (isSingle(l)) {
       return skew(clone(node, { lvl: lvl - 1 }))
+    } else {
+      if (!empty(l) && !empty(l.r)) {
+        return clone(l.r, {
+          l: clone(l, { r: l.r.l }),
+          r: clone(node, {
+            l: l.r.r,
+            lvl: lvl - 1,
+          }),
+          lvl: lvl,
+        })
+      } else {
+        throw new Error('Unexpected empty nodes')
+      }
     }
-    if (!empty(l) && !empty(l.r)) {
-      return clone(l.r, {
-        l: clone(l, { r: l.r.l }),
-        r: clone(node, {
-          l: l.r.r,
-          lvl: lvl - 1,
-        }),
-        lvl,
-      })
-    }
-    throw new Error('Unexpected empty nodes')
-  } else if (isSingle(node)) {
-    return split(clone(node, { lvl: lvl - 1 }))
-  } else if (!empty(r) && !empty(r.l)) {
-    const rl = r.l
-    const rlvl = isSingle(rl) ? r.lvl - 1 : r.lvl
-
-    return clone(rl, {
-      l: clone(node, {
-        r: rl.l,
-        lvl: lvl - 1,
-      }),
-      r: split(clone(r, { l: rl.r, lvl: rlvl })),
-      lvl: rl.lvl + 1,
-    })
   } else {
-    throw new Error('Unexpected empty nodes')
+    if (isSingle(node)) {
+      return split(clone(node, { lvl: lvl - 1 }))
+    } else {
+      if (!empty(r) && !empty(r.l)) {
+        const rl = r.l
+        const rlvl = isSingle(rl) ? r.lvl - 1 : r.lvl
+
+        return clone(rl, {
+          l: clone(node, {
+            r: rl.l,
+            lvl: lvl - 1,
+          }),
+          r: split(clone(r, { l: rl.r, lvl: rlvl })),
+          lvl: rl.lvl + 1,
+        })
+      } else {
+        throw new Error('Unexpected empty nodes')
+      }
+    }
   }
 }
 
