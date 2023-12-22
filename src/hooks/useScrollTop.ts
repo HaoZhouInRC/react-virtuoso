@@ -83,7 +83,10 @@ export default function useScrollTop(
 
     if (scrollerElement === externalWindow) {
       // this is not a mistake
-      scrollHeight = Math.max(correctItemSize(document.documentElement, 'height'), document.documentElement.scrollHeight)
+      scrollHeight = Math.max(
+        correctItemSize(externalWindow.document.documentElement, 'height'),
+        externalWindow.document.documentElement.scrollHeight
+      )
       offsetHeight = externalWindow.innerHeight
       scrollTop = externalWindow.document.documentElement.scrollTop
     } else {
