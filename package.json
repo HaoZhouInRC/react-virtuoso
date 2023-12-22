@@ -91,6 +91,7 @@
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.14.0",
+    "resize-observer-polyfill": "^1.5.1",
     "@tanstack/react-table": "^8.9.11",
     "semantic-release": "^19.0.5",
     "terser": "^5.17.1",

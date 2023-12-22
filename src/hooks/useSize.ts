@@ -1,17 +1,19 @@
 import React from 'react'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 
 export type CallbackRefParam = HTMLElement | null
 
 export function useSizeWithElRef(callback: (e: HTMLElement) => void, enabled = true) {
   const ref = React.useRef<CallbackRefParam>(null)
+  const { externalWindow = window } = useRcPortalWindowContext()
 
   let callbackRef = (_el: CallbackRefParam) => {
     void 0
   }
 
-  if (typeof ResizeObserver !== 'undefined') {
+  if (typeof externalWindow['ResizeObserver'] !== 'undefined') {
     const observer = React.useMemo(() => {
-      return new ResizeObserver((entries: ResizeObserverEntry[]) => {
+      return new externalWindow['ResizeObserver']((entries: ResizeObserverEntry[]) => {
         const element = entries[0].target as HTMLElement
         if (element.offsetParent !== null) {
           callback(element)

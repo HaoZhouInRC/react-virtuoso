@@ -2,6 +2,8 @@ import React from 'react'
 import { Log, LogLevel } from '../loggerSystem'
 import { useSizeWithElRef } from './useSize'
 import { SizeRange, SizeFunction, ScrollContainerState } from '../interfaces'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
+
 export default function useChangedListContentsSizes(
   callback: (ranges: SizeRange[]) => void,
   itemSize: SizeFunction,
@@ -11,6 +13,8 @@ export default function useChangedListContentsSizes(
   gap?: (gap: number) => void,
   customScrollParent?: HTMLElement
 ) {
+  const { externalWindow = window } = useRcPortalWindowContext()
+
   const memoedCallback = React.useCallback(
     (el: HTMLElement) => {
       const ranges = getChangedChildSizes(el.children, itemSize, 'offsetHeight', log)
@@ -26,19 +30,19 @@ export default function useChangedListContentsSizes(
       const scrollTop = customScrollParent
         ? customScrollParent.scrollTop
         : windowScrolling
-        ? window.pageYOffset || document.documentElement.scrollTop
+        ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
         : scrollableElement.scrollTop
 
       const scrollHeight = customScrollParent
         ? customScrollParent.scrollHeight
         : windowScrolling
-        ? document.documentElement.scrollHeight
+        ? externalWindow.document.documentElement.scrollHeight
         : scrollableElement.scrollHeight
 
       const viewportHeight = customScrollParent
         ? customScrollParent.offsetHeight
         : windowScrolling
-        ? window.innerHeight
+        ? externalWindow.innerHeight
         : scrollableElement.offsetHeight
 
       scrollContainerStateCallback({
@@ -53,7 +57,7 @@ export default function useChangedListContentsSizes(
         callback(ranges)
       }
     },
-    [callback, itemSize, log, gap, customScrollParent, scrollContainerStateCallback]
+    [callback, itemSize, log, gap, customScrollParent, scrollContainerStateCallback, externalWindow]
   )
 
   return useSizeWithElRef(memoedCallback, enabled)
