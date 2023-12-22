@@ -1,16 +1,11 @@
-import * as u from '@virtuoso.dev/urx'
-
-import { alignToBottomSystem } from './alignToBottomSystem'
+import * as u from './urx'
 import { domIOSystem } from './domIOSystem'
 import { followOutputSystem } from './followOutputSystem'
 import { groupedListSystem } from './groupedListSystem'
 import { initialItemCountSystem } from './initialItemCountSystem'
-import { initialScrollTopSystem } from './initialScrollTopSystem'
 import { initialTopMostItemIndexSystem } from './initialTopMostItemIndexSystem'
 import { listStateSystem } from './listStateSystem'
-import { loggerSystem } from './loggerSystem'
 import { propsReadySystem } from './propsReadySystem'
-import { scrollIntoViewSystem } from './scrollIntoViewSystem'
 import { scrollSeekSystem } from './scrollSeekSystem'
 import { scrollToIndexSystem } from './scrollToIndexSystem'
 import { sizeRangeSystem } from './sizeRangeSystem'
@@ -18,7 +13,11 @@ import { sizeSystem } from './sizeSystem'
 import { topItemCountSystem } from './topItemCountSystem'
 import { totalListHeightSystem } from './totalListHeightSystem'
 import { upwardScrollFixSystem } from './upwardScrollFixSystem'
+import { initialScrollTopSystem } from './initialScrollTopSystem'
+import { alignToBottomSystem } from './alignToBottomSystem'
 import { windowScrollerSystem } from './windowScrollerSystem'
+import { loggerSystem } from './loggerSystem'
+import { scrollIntoViewSystem } from './scrollIntoViewSystem'
 
 // workaround the growing list of systems below
 // fix this with 4.1 recursive conditional types
@@ -79,7 +78,7 @@ export const listSystem = u.system(
     followOutput,
     { listState, topItemsIndexes, ...flags },
     { scrollToIndex },
-    ,
+    _,
     { topItemCount },
     { groupCounts },
     featureGroup1,

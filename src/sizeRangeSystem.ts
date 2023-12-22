@@ -1,8 +1,7 @@
-import * as u from '@virtuoso.dev/urx'
-
-import { tupleComparator } from './comparators'
+import * as u from './urx'
 import { domIOSystem } from './domIOSystem'
-import { DOWN, ScrollDirection, UP } from './stateFlagsSystem'
+import { UP, DOWN, ScrollDirection } from './stateFlagsSystem'
+import { tupleComparator } from './comparators'
 
 export type NumberTuple = [number, number]
 export type Overscan = number | { main: number; reverse: number }
@@ -16,11 +15,13 @@ export type ChangeDirection = typeof UP | typeof DOWN | typeof NONE
 export function getOverscan(overscan: Overscan, end: ListEnd, direction: ScrollDirection) {
   if (typeof overscan === 'number') {
     return (direction === UP && end === TOP) || (direction === DOWN && end === BOTTOM) ? overscan : 0
+  } else {
+    if (direction === UP) {
+      return end === TOP ? overscan.main : overscan.reverse
+    } else {
+      return end === BOTTOM ? overscan.main : overscan.reverse
+    }
   }
-  if (direction === UP) {
-    return end === TOP ? overscan.main : overscan.reverse
-  }
-  return end === BOTTOM ? overscan.main : overscan.reverse
 }
 
 function getViewportIncrease(value: ViewportIncrease, end: ListEnd) {

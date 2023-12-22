@@ -1,8 +1,7 @@
-import * as u from '@virtuoso.dev/urx'
-
-import { buildListState, listStateSystem } from './listStateSystem'
-import { propsReadySystem } from './propsReadySystem'
+import * as u from './urx'
+import { listStateSystem, buildListState } from './listStateSystem'
 import { sizeSystem } from './sizeSystem'
+import { propsReadySystem } from './propsReadySystem'
 
 export const initialItemCountSystem = u.system(
   ([{ sizes, firstItemIndex, data, gap }, { listState }, { didMount }]) => {

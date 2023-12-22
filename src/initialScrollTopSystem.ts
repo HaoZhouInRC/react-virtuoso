@@ -1,8 +1,7 @@
-import * as u from '@virtuoso.dev/urx'
-
-import { domIOSystem } from './domIOSystem'
-import { propsReadySystem } from './propsReadySystem'
+import * as u from './urx'
 import { totalListHeightSystem } from './totalListHeightSystem'
+import { propsReadySystem } from './propsReadySystem'
+import { domIOSystem } from './domIOSystem'
 
 export const initialScrollTopSystem = u.system(
   ([{ totalListHeight }, { didMount }, { scrollTo }]) => {
