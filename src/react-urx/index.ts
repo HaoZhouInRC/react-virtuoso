@@ -30,20 +30,7 @@
  *
  * @packageDocumentation
  */
-import * as React from 'react'
-import {
-  ComponentType,
-  createContext,
-  createElement,
-  forwardRef,
-  ForwardRefExoticComponent,
-  ReactNode,
-  RefAttributes,
-  useContext,
-  useImperativeHandle,
-  useState,
-  useCallback,
-} from 'react'
+import React from 'react'
 import * as u from '../urx'
 import type { Emitter, Publisher, AnySystemSpec, SR, Stream, StatefulStream } from '../urx'
 
@@ -149,7 +136,7 @@ export type MethodsFromPropMap<E extends AnySystemSpec, M extends SystemPropsMap
  *
  * @typeParam T the type of the component
  */
-export type RefHandle<T> = T extends ForwardRefExoticComponent<RefAttributes<infer Handle>> ? Handle : never
+export type RefHandle<T> = T extends React.ForwardRefExoticComponent<React.RefAttributes<infer Handle>> ? Handle : never
 
 /**
  * Converts a system spec to React component by mapping the system streams to component properties, events and methods. Returns hooks for querying and modifying
@@ -174,9 +161,9 @@ export function systemToComponent<SS extends AnySystemSpec, M extends SystemProp
   const optionalPropNames = Object.keys(map.optional || {})
   const methodNames = Object.keys(map.methods || {})
   const eventNames = Object.keys(map.events || {})
-  const Context = createContext({} as ContextValue)
+  const Context = React.createContext({} as ContextValue)
 
-  type RootCompProps = R extends ComponentType<infer RP> ? RP : { children?: ReactNode }
+  type RootCompProps = R extends React.ComponentType<infer RP> ? RP : { children?: React.ReactNode }
 
   type CompProps = PropsFromPropMap<SS, M> & RootCompProps
 
@@ -225,14 +212,14 @@ export function systemToComponent<SS extends AnySystemSpec, M extends SystemProp
    * A React component generated from an urx system
    */
   // eslint-disable-next-line react/display-name
-  const Component = forwardRef<CompMethods, CompProps>((propsWithChildren, ref) => {
+  const Component = React.forwardRef<CompMethods, CompProps>((propsWithChildren, ref) => {
     const { children, ...props } = propsWithChildren as any
 
-    const [system] = useState(() => {
+    const [system] = React.useState(() => {
       return u.tap(u.init(systemSpec), (system) => applyPropsToSystem(system, props))
     })
 
-    const [handlers] = useState(u.curry1to0(buildEventHandlers, system))
+    const [handlers] = React.useState(u.curry1to0(buildEventHandlers, system))
 
     useIsomorphicLayoutEffect(() => {
       for (const eventName of eventNames) {
@@ -249,14 +236,14 @@ export function systemToComponent<SS extends AnySystemSpec, M extends SystemProp
       applyPropsToSystem(system, props)
     })
 
-    useImperativeHandle(ref, u.always(buildMethods(system)))
+    React.useImperativeHandle(ref, u.always(buildMethods(system)))
 
-    return createElement(
+    return React.createElement(
       Context.Provider,
       { value: system },
       Root
-        ? createElement(
-            Root as unknown as ComponentType,
+        ? React.createElement(
+            Root as unknown as React.ComponentType,
             omit([...requiredPropNames, ...optionalPropNames, ...eventNames], props),
             children
           )
@@ -265,7 +252,7 @@ export function systemToComponent<SS extends AnySystemSpec, M extends SystemProp
   })
 
   const usePublisher = <K extends keyof S>(key: K) => {
-    return useCallback(u.curry2to1(u.publish, React.useContext(Context)[key]), [key]) as (
+    return React.useCallback(u.curry2to1(u.publish, React.useContext(Context)[key]), [key]) as (
       value: S[K] extends Stream<infer R> ? R : never
     ) => void
   }
@@ -274,10 +261,10 @@ export function systemToComponent<SS extends AnySystemSpec, M extends SystemProp
    * Returns the value emitted from the stream.
    */
   const useEmitterValue = <K extends keyof S, V = S[K] extends StatefulStream<infer R> ? R : never>(key: K) => {
-    const system = useContext(Context)
+    const system = React.useContext(Context)
     const source: StatefulStream<V> = system[key]
 
-    const [value, setValue] = useState(u.curry1to0(u.getValue, source))
+    const [value, setValue] = React.useState(u.curry1to0(u.getValue, source))
 
     useIsomorphicLayoutEffect(
       () =>
@@ -293,7 +280,7 @@ export function systemToComponent<SS extends AnySystemSpec, M extends SystemProp
   }
 
   const useEmitter = <K extends keyof S, V = S[K] extends Stream<infer R> ? R : never>(key: K, callback: (value: V) => void) => {
-    const context = useContext(Context)
+    const context = React.useContext(Context)
     const source: Stream<V> = context[key]
     useIsomorphicLayoutEffect(() => u.subscribe(source, callback), [callback, source])
   }

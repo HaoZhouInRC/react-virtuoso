@@ -1,21 +1,19 @@
-import { useCallback, useEffect, useRef } from 'react'
-
-import { useRcPortalWindowContext } from './useRcPortalWindowContext'
-import { WindowViewportInfo } from '../interfaces'
+import React from 'react'
 import { useSizeWithElRef } from './useSize'
+import { WindowViewportInfo } from '../interfaces'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 
 export default function useWindowViewportRectRef(callback: (info: WindowViewportInfo) => void, customScrollParent?: HTMLElement) {
-  const viewportInfo = useRef<WindowViewportInfo | null>(null)
+  const viewportInfo = React.useRef<WindowViewportInfo | null>(null)
   const { externalWindow = window } = useRcPortalWindowContext()
 
-  const calculateInfo = useCallback(
+  const calculateInfo = React.useCallback(
     (element: HTMLElement | null) => {
       if (element === null || !element.offsetParent) {
         return
       }
       const rect = element.getBoundingClientRect()
       const visibleWidth = rect.width
-      // eslint-disable-next-line one-var
       let visibleHeight: number, offsetTop: number
 
       if (customScrollParent) {
@@ -42,25 +40,26 @@ export default function useWindowViewportRectRef(callback: (info: WindowViewport
 
   const { callbackRef, ref } = useSizeWithElRef(calculateInfo)
 
-  const scrollAndResizeEventHandler = useCallback(() => {
+  const scrollAndResizeEventHandler = React.useCallback(() => {
     calculateInfo(ref.current)
   }, [calculateInfo, ref])
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (customScrollParent) {
       customScrollParent.addEventListener('scroll', scrollAndResizeEventHandler)
-      const observer = new externalWindow.ResizeObserver(scrollAndResizeEventHandler)
+      const observer = new externalWindow['ResizeObserver'](scrollAndResizeEventHandler)
       observer.observe(customScrollParent)
       return () => {
         customScrollParent.removeEventListener('scroll', scrollAndResizeEventHandler)
         observer.unobserve(customScrollParent)
       }
-    }
-    externalWindow.addEventListener('scroll', scrollAndResizeEventHandler)
-    externalWindow.addEventListener('resize', scrollAndResizeEventHandler)
-    return () => {
-      externalWindow.removeEventListener('scroll', scrollAndResizeEventHandler)
-      externalWindow.removeEventListener('resize', scrollAndResizeEventHandler)
+    } else {
+      externalWindow.addEventListener('scroll', scrollAndResizeEventHandler)
+      externalWindow.addEventListener('resize', scrollAndResizeEventHandler)
+      return () => {
+        externalWindow.removeEventListener('scroll', scrollAndResizeEventHandler)
+        externalWindow.removeEventListener('resize', scrollAndResizeEventHandler)
+      }
     }
   }, [scrollAndResizeEventHandler, customScrollParent, externalWindow])
 

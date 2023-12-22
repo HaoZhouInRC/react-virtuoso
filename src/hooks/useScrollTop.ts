@@ -1,10 +1,10 @@
-import { useRef, useCallback, useEffect } from 'react'
+import React from 'react'
 import * as u from '../urx'
 import { correctItemSize } from '../utils/correctItemSize'
-import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 import { ScrollContainerState } from '../interfaces'
-import { flushSync } from 'react-dom'
+import ReactDOM from 'react-dom'
 import { approximatelyEqual } from '../utils/approximatelyEqual'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
 
 export type ScrollerRef = Window | HTMLElement | null
 
@@ -15,12 +15,12 @@ export default function useScrollTop(
   scrollerRefCallback: (ref: ScrollerRef) => void = u.noop,
   customScrollParent?: HTMLElement
 ) {
-  const scrollerRef = useRef<HTMLElement | null | Window>(null)
-  const scrollTopTarget = useRef<any>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollerRef = React.useRef<HTMLElement | null | Window>(null)
+  const scrollTopTarget = React.useRef<any>(null)
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const { externalWindow = window } = useRcPortalWindowContext()
 
-  const handler = useCallback(
+  const handler = React.useCallback(
     (ev: Event) => {
       const el = ev.target as HTMLElement
       const windowScroll = (el as any) === externalWindow || (el as any) === externalWindow.document
@@ -39,7 +39,7 @@ export default function useScrollTop(
       if ((ev as any).suppressFlushSync) {
         call()
       } else {
-        flushSync(call)
+        ReactDOM.flushSync(call)
       }
 
       if (scrollTopTarget.current !== null) {
@@ -56,7 +56,7 @@ export default function useScrollTop(
     [externalWindow, scrollContainerStateCallback, smoothScrollTargetReached]
   )
 
-  useEffect(() => {
+  React.useEffect(() => {
     const localRef = customScrollParent ? customScrollParent : scrollerRef.current!
 
     scrollerRefCallback(customScrollParent ? customScrollParent : scrollerRef.current)

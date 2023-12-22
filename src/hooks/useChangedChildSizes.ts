@@ -1,9 +1,10 @@
-import { useRcPortalWindowContext } from './useRcPortalWindowContext'
-/* eslint-disable no-continue */
+import React from 'react'
 import { Log, LogLevel } from '../loggerSystem'
 import { SizeRange } from '../sizeSystem'
 import { useSizeWithElRef } from './useSize'
 import { SizeFunction, ScrollContainerState } from '../interfaces'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
+
 export default function useChangedListContentsSizes(
   callback: (ranges: SizeRange[]) => void,
   itemSize: SizeFunction,
@@ -15,47 +16,52 @@ export default function useChangedListContentsSizes(
 ) {
   const { externalWindow = window } = useRcPortalWindowContext()
 
-  return useSizeWithElRef((el: HTMLElement) => {
-    const ranges = getChangedChildSizes(el.children, itemSize, 'offsetHeight', log)
-    let scrollableElement = el.parentElement!
+  const memoedCallback = React.useCallback(
+    (el: HTMLElement) => {
+      const ranges = getChangedChildSizes(el.children, itemSize, 'offsetHeight', log)
+      let scrollableElement = el.parentElement!
 
-    while (!scrollableElement.dataset['virtuosoScroller']) {
-      scrollableElement = scrollableElement.parentElement!
-    }
+      while (!scrollableElement.dataset['virtuosoScroller']) {
+        scrollableElement = scrollableElement.parentElement!
+      }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const windowScrolling = (scrollableElement.firstElementChild! as HTMLDivElement).dataset['viewportType']! === 'window'
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const windowScrolling = (scrollableElement.lastElementChild! as HTMLDivElement).dataset['viewportType']! === 'window'
 
-    const scrollTop = customScrollParent
-      ? customScrollParent.scrollTop
-      : windowScrolling
+      const scrollTop = customScrollParent
+        ? customScrollParent.scrollTop
+        : windowScrolling
       ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
-      : scrollableElement.scrollTop
+        : scrollableElement.scrollTop
 
-    const scrollHeight = customScrollParent
-      ? customScrollParent.scrollHeight
-      : windowScrolling
-      ? document.documentElement.scrollHeight
-      : scrollableElement.scrollHeight
+      const scrollHeight = customScrollParent
+        ? customScrollParent.scrollHeight
+        : windowScrolling
+        ? document.documentElement.scrollHeight
+        : scrollableElement.scrollHeight
 
-    const viewportHeight = customScrollParent
-      ? customScrollParent.offsetHeight
-      : windowScrolling
-      ? window.innerHeight
-      : scrollableElement.offsetHeight
+      const viewportHeight = customScrollParent
+        ? customScrollParent.offsetHeight
+        : windowScrolling
+        ? window.innerHeight
+        : scrollableElement.offsetHeight
 
-    scrollContainerStateCallback({
-      scrollTop: Math.max(scrollTop, 0),
-      scrollHeight,
-      viewportHeight,
-    })
+      scrollContainerStateCallback({
+        scrollTop: Math.max(scrollTop, 0),
+        scrollHeight,
+        viewportHeight,
+      })
 
-    gap?.(resolveGapValue('row-gap', getComputedStyle(el).rowGap, log))
+      gap?.(resolveGapValue('row-gap', getComputedStyle(el).rowGap, log))
 
-    if (ranges !== null) {
-      callback(ranges)
-    }
-  }, enabled)
+      if (ranges !== null) {
+        callback(ranges)
+      }
+    },
+    [callback, itemSize, log, gap, customScrollParent, scrollContainerStateCallback]
+  )
+
+  return useSizeWithElRef(memoedCallback, enabled)
 }
 
 function getChangedChildSizes(children: HTMLCollection, itemSize: SizeFunction, field: 'offsetHeight' | 'offsetWidth', log: Log) {

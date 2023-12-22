@@ -1,7 +1,6 @@
 import { systemToComponent } from './react-urx'
 import * as u from './urx'
-import * as React from 'react'
-import { createElement, FC, PropsWithChildren, ReactElement, Ref, useContext } from 'react'
+import React from 'react'
 import useChangedListContentsSizes from './hooks/useChangedChildSizes'
 import { ComputeItemKey, ItemContent, FixedHeaderContent, FixedFooterContent, TableComponents, TableRootProps } from './interfaces'
 import { listSystem } from './listSystem'
@@ -115,22 +114,22 @@ const Items = /*#__PURE__*/ React.memo(function VirtuosoItems() {
   const context = useEmitterValue('context')
 
   if (statefulTotalCount === 0 && EmptyPlaceholder) {
-    return createElement(EmptyPlaceholder, contextPropIfNotDomElement(EmptyPlaceholder, context))
+    return React.createElement(EmptyPlaceholder, contextPropIfNotDomElement(EmptyPlaceholder, context))
   }
 
   const paddingTop = listState.offsetTop + paddingTopAddition + deviation
   const paddingBottom = listState.offsetBottom
 
-  const paddingTopEl = paddingTop > 0 ? <FillerRow height={paddingTop} key="padding-top" /> : null
+  const paddingTopEl = paddingTop > 0 ? <FillerRow height={paddingTop} key="padding-top" context={context} /> : null
 
-  const paddingBottomEl = paddingBottom > 0 ? <FillerRow height={paddingBottom} key="padding-bottom" /> : null
+  const paddingBottomEl = paddingBottom > 0 ? <FillerRow height={paddingBottom} key="padding-bottom" context={context} /> : null
 
   const items = listState.items.map((item) => {
     const index = item.originalIndex!
     const key = computeItemKey(index + firstItemIndex, item.data, context)
 
     if (isSeeking) {
-      return createElement(ScrollSeekPlaceholder, {
+      return React.createElement(ScrollSeekPlaceholder, {
         ...contextPropIfNotDomElement(ScrollSeekPlaceholder, context),
         key,
         index: item.index,
@@ -138,7 +137,7 @@ const Items = /*#__PURE__*/ React.memo(function VirtuosoItems() {
         type: item.type || 'item',
       })
     }
-    return createElement(
+    return React.createElement(
       TableRowComponent,
       {
         ...contextPropIfNotDomElement(TableRowComponent, context),
@@ -153,15 +152,15 @@ const Items = /*#__PURE__*/ React.memo(function VirtuosoItems() {
     )
   })
 
-  return createElement(
+  return React.createElement(
     TableBodyComponent,
     { ref: callbackRef, 'data-test-id': 'virtuoso-item-list', ...contextPropIfNotDomElement(TableBodyComponent, context) },
     [paddingTopEl, ...items, paddingBottomEl]
   )
 })
 
-const Viewport: FC<PropsWithChildren<unknown>> = ({ children }) => {
-  const ctx = useContext(VirtuosoMockContext)
+const Viewport: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+  const ctx = React.useContext(VirtuosoMockContext)
   const viewportHeight = usePublisher('viewportHeight')
   const fixedItemHeight = usePublisher('fixedItemHeight')
   const viewportRef = useSize(u.compose(viewportHeight, (el) => correctItemSize(el, 'height')))
@@ -180,8 +179,8 @@ const Viewport: FC<PropsWithChildren<unknown>> = ({ children }) => {
   )
 }
 
-const WindowViewport: FC<PropsWithChildren<unknown>> = ({ children }) => {
-  const ctx = useContext(VirtuosoMockContext)
+const WindowViewport: React.FC<React.PropsWithChildren<unknown>> = ({ children }) => {
+  const ctx = React.useContext(VirtuosoMockContext)
   const windowViewportRect = usePublisher('windowViewportRect')
   const fixedItemHeight = usePublisher('fixedItemHeight')
   const customScrollParent = useEmitterValue('customScrollParent')
@@ -201,7 +200,7 @@ const WindowViewport: FC<PropsWithChildren<unknown>> = ({ children }) => {
   )
 }
 
-const TableRoot: FC<TableRootProps> = /*#__PURE__*/ React.memo(function TableVirtuosoRoot(props) {
+const TableRoot: React.FC<TableRootProps> = /*#__PURE__*/ React.memo(function TableVirtuosoRoot(props) {
   const useWindowScroll = useEmitterValue('useWindowScroll')
   const customScrollParent = useEmitterValue('customScrollParent')
   const fixedHeaderHeight = usePublisher('fixedHeaderHeight')
@@ -319,5 +318,5 @@ const Scroller = /*#__PURE__*/ buildScroller({ usePublisher, useEmitterValue, us
 const WindowScroller = /*#__PURE__*/ buildWindowScroller({ usePublisher, useEmitterValue, useEmitter })
 
 export const TableVirtuoso = Table as <ItemData = any, Context = any>(
-  props: TableVirtuosoProps<ItemData, Context> & { ref?: Ref<TableVirtuosoHandle> }
-) => ReactElement
+  props: TableVirtuosoProps<ItemData, Context> & { ref?: React.Ref<TableVirtuosoHandle> }
+) => React.ReactElement

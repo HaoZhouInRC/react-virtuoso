@@ -3,13 +3,17 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const ext = {
-  cjs: 'js',
-  es: 'm.js',
+  cjs: 'cjs',
+  es: 'mjs',
 }
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      jsxRuntime: 'classic',
+    }),
+  ],
   build: {
     minify: 'terser',
     lib: {
