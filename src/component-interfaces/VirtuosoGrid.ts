@@ -1,13 +1,30 @@
 import type {
   GridComponents,
   GridComputeItemKey,
+  GridIndexLocation,
   GridItemContent,
   GridRootProps,
-  IndexLocationWithAlign,
   ListRange,
   ScrollSeekConfiguration,
 } from '../interfaces'
 import { LogLevel } from '../loggerSystem'
+
+export interface Gap {
+  row: number
+  column: number
+}
+
+export interface ElementDimensions {
+  width: number
+  height: number
+}
+
+export interface GridStateSnapshot {
+  viewport: ElementDimensions
+  item: ElementDimensions
+  gap: Gap
+  scrollTop: number
+}
 
 export interface VirtuosoGridProps<D, C = unknown> extends GridRootProps {
   /**
@@ -82,6 +99,12 @@ export interface VirtuosoGridProps<D, C = unknown> extends GridRootProps {
   rangeChanged?: (range: ListRange) => void
 
   /**
+   * reports when the grid state changes. The reported value can be stored and passed back to `restoreStateFrom` to restore the grid to the same state.
+   */
+  stateChanged?: (state: GridStateSnapshot) => void
+
+  restoreStateFrom?: GridStateSnapshot | undefined | null
+  /**
    * Called with true / false when the list has reached the bottom / gets scrolled up.
    * Can be used to load newer items, like `tail -f`.
    */
@@ -123,10 +146,16 @@ export interface VirtuosoGridProps<D, C = unknown> extends GridRootProps {
    * Ensure that you have "all levels" enabled in the browser console too see the messages.
    */
   logLevel?: LogLevel
+
+  /*
+   * Set to a value between 0 and totalCount - 1 to make the grid start scrolled to that item.
+   * Pass in an object to achieve additional effects similar to `scrollToIndex`.
+   */
+  initialTopMostItemIndex?: GridIndexLocation
 }
 
 export interface VirtuosoGridHandle {
-  scrollToIndex(location: number | IndexLocationWithAlign): void
+  scrollToIndex(location: GridIndexLocation): void
   scrollTo(location: ScrollToOptions): void
   scrollBy(location: ScrollToOptions): void
 }
