@@ -3,6 +3,8 @@ import { Log, LogLevel } from '../loggerSystem'
 import { SizeRange } from '../sizeSystem'
 import { useSizeWithElRef } from './useSize'
 import { SizeFunction, ScrollContainerState } from '../interfaces'
+import { useRcPortalWindowContext } from './useRcPortalWindowContext'
+
 export default function useChangedListContentsSizes(
   callback: (ranges: SizeRange[]) => void,
   itemSize: SizeFunction,
@@ -12,6 +14,8 @@ export default function useChangedListContentsSizes(
   gap?: (gap: number) => void,
   customScrollParent?: HTMLElement
 ) {
+  const { externalWindow = window } = useRcPortalWindowContext()
+
   const memoedCallback = React.useCallback(
     (el: HTMLElement) => {
       const ranges = getChangedChildSizes(el.children, itemSize, 'offsetHeight', log)
@@ -27,7 +31,7 @@ export default function useChangedListContentsSizes(
       const scrollTop = customScrollParent
         ? customScrollParent.scrollTop
         : windowScrolling
-        ? window.pageYOffset || document.documentElement.scrollTop
+      ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
         : scrollableElement.scrollTop
 
       const scrollHeight = customScrollParent
