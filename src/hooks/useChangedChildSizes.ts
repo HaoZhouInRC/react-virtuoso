@@ -30,7 +30,7 @@ export default function useChangedListContentsSizes(
       const scrollTop = customScrollParent
         ? customScrollParent.scrollTop
         : windowScrolling
-      ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
+        ? externalWindow.pageYOffset || externalWindow.document.documentElement.scrollTop
         : scrollableElement.scrollTop
 
       const scrollHeight = customScrollParent
